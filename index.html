@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=4.1">
+  <link rel="stylesheet" href="css/style.css?v=4.2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -171,7 +171,7 @@
       <!-- Live scoreboard -->
       <section id="page-live" class="page">
         <div class="section-intro"><div><span class="eyebrow">SCOREBOARD</span><h2>Live from the turf</h2><p class="muted">Scores update on every ball for everyone in the stadium.</p></div><button class="btn ghost" id="refreshLive">↻ Refresh</button></div>
-        <div id="liveBoards"><div class="empty">No match is live right now. Captains or the admin can start one from Fixtures once the team sheet is locked.</div></div>
+        <div id="liveBoards"><div class="empty">No match is live right now. The admin starts the match from Fixtures once the team sheet is locked.</div></div>
       </section>
 
       <!-- Dressing room / chat -->
@@ -253,7 +253,7 @@
   <!-- Type totals -->
   <dialog id="totalsDialog" class="modal"><form id="totalsForm" method="dialog"><div class="modal-head"><div><span class="eyebrow">QUICK SCORE</span><h3 id="totalsTitle">Enter innings total</h3></div><button class="icon-btn" type="button" data-close="totalsDialog">×</button></div><input type="hidden" id="totalsMatchId"><input type="hidden" id="totalsInnings"><div class="form-grid"><label>Runs<input id="totalsRuns" type="number" min="0" max="999" required></label><label>Wickets<input id="totalsWkts" type="number" min="0" max="10" required></label><label>Overs (e.g. 7.3)<input id="totalsOvers" type="number" min="0" step="0.1" required></label></div><label class="inline-check"><input type="checkbox" id="totalsDone"> Innings finished</label><div class="modal-actions"><button type="button" class="btn ghost" data-close="totalsDialog">Cancel</button><button class="btn primary" type="submit">Save score</button></div></form></dialog>
 
-  <script src="js/config.js?v=4.1"></script>
-  <script src="js/app.js?v=4.1"></script>
+  <script src="js/config.js?v=4.2"></script>
+  <script src="js/app.js?v=4.2"></script>
 </body>
 </html>
