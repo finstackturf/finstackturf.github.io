@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const APP_VERSION = "4.1";
+  const APP_VERSION = "4.2";
   const cfg = window.FINSTACK_CONFIG || {};
   const configured = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes("YOUR-PROJECT") &&
     cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes("YOUR_SUPABASE");
@@ -56,7 +56,8 @@
     });
   }
   const activeMembers = () => members.filter(m => m.approved && m.active !== false);
-  const canScore = m => isAdmin() || (profile && [m.captain_a, m.captain_b].includes(profile.id));
+  const canScore = m => isAdmin();
+  const canPick = m => isAdmin() || (profile && [m.captain_a, m.captain_b].includes(profile.id));
   const stageOf = m => m.play_status === "completed" ? "done" : m.play_status === "live" ? "live" : m.status === "voting" ? "voting" : "locked";
   const teamOf = m => ({ A: teams.filter(t => t.match_id === m.id && t.team === "A").map(t => t.profile_id), B: teams.filter(t => t.match_id === m.id && t.team === "B").map(t => t.profile_id) });
   const inningsOf = m => innings.filter(i => i.match_id === m.id).sort((a, b) => a.innings_no - b.innings_no);
@@ -278,7 +279,8 @@
       const playBtns = [
         `<button class="btn ghost sm" data-open-match="${m.id}">${st === "done" ? "Scorecard" : "Match centre"}</button>`,
         st === "live" ? `<button class="btn primary sm" data-goto="live">${canScore(m) ? "Score now 🔴" : "Live score 🔴"}</button>` : "",
-        st === "locked" && canScore(m) ? `<button class="btn ghost sm" data-open-match="${m.id}" data-ctab="teams">Pick teams</button><button class="btn primary sm" data-start-match="${m.id}">Start match</button>` : ""
+        st === "locked" && canPick(m) ? `<button class="btn ghost sm" data-open-match="${m.id}" data-ctab="teams">Pick teams</button>` : "",
+        st === "locked" && canScore(m) ? `<button class="btn primary sm" data-start-match="${m.id}">Start match</button>` : ""
       ].join("");
       const adminBtns = isAdmin() ? `<div class="btn-row">${st !== "done" ? `<button class="text-btn" data-edit-match="${m.id}">Edit</button>` : ""}${m.voting_closed_at && st === "locked" && m.status !== "settled" ? `<button class="text-btn" data-reopen-voting="${m.id}">Reopen voting</button>` : ""}${st === "done" ? `<button class="text-btn" data-reopen-match="${m.id}">Reopen result</button>` : ""}${m.status !== "settled" ? `<button class="text-btn danger" data-delete-match="${m.id}">Delete</button><button class="btn primary sm" data-settle="${m.id}">Settle ₹ →</button>` : `<span class="muted">✓ Settled ${dtFmt(m.settled_at)}</span>`}</div>` : (m.status === "settled" ? `<span class="muted">✓ Settled</span>` : "");
       return `<article class="match-card ${st}"><div class="match-card-top"><span class="eyebrow">${dateFmt(m.match_date)}</span>${badge}</div><h3>${esc(m.venue)}</h3>${matchDetailsLine(m)}${resultStrip(m)}${picked ? `<div class="match-meta" style="margin-top:8px">${esc(tname(m, "A"))} (${tm.A.length}) vs ${esc(tname(m, "B"))} (${tm.B.length})${count - picked > 0 ? ` · ${count - picked} unassigned` : ""}</div>` : `<div class="chips">${chips || '<span class="muted">No players selected</span>'}</div>`}<div class="match-cost">${money(m.total_cost)}<small class="muted"> total · ${count ? money(Number(m.total_cost) / count) + " each" : "no players"}</small></div><div class="match-foot"><span>${mine ? `You're playing · <b>${money(mine.share_amount)}</b>` : "You're not in this one"}</span><div class="btn-row">${playBtns}</div></div>${adminBtns ? `<div class="match-admin">${adminBtns}</div>` : ""}</article>`;
@@ -380,10 +382,10 @@
     const st = stageOf(m);
     $("centreEyebrow").textContent = `MATCH CENTRE · ${st === "voting" ? "VOTING OPEN" : st === "live" ? "🔴 LIVE" : st === "done" ? "FULL TIME" : "TEAM LOCKED"}`;
     $("centreTitle").textContent = m.venue;
-    $("centreMeta").innerHTML = `${dateFmt(m.match_date)}${m.start_time ? " · " + timeFmt(m.start_time) + (m.end_time ? " – " + timeFmt(m.end_time) : "") : ""}${m.overs ? ` · ${m.overs} overs` : canScore(m) && st !== "voting" && st !== "done" ? ` · <button class="text-btn" data-set-overs="${m.id}">set overs</button>` : ""}${m.venue_url ? ` · <a href="${esc(m.venue_url)}" target="_blank" rel="noopener">📍 Map ↗</a>` : ""} · ${money(m.total_cost)} total`;
+    $("centreMeta").innerHTML = `${dateFmt(m.match_date)}${m.start_time ? " · " + timeFmt(m.start_time) + (m.end_time ? " – " + timeFmt(m.end_time) : "") : ""}${m.overs ? ` · ${m.overs} overs` : isAdmin() && st !== "voting" && st !== "done" ? ` · <button class="text-btn" data-set-overs="${m.id}">set overs</button>` : ""}${m.venue_url ? ` · <a href="${esc(m.venue_url)}" target="_blank" rel="noopener">📍 Map ↗</a>` : ""} · ${money(m.total_cost)} total`;
     // teams
     const att = (m.match_attendance || []).map(a => a.profile_id); const tm = teamDraft || teamOf(m);
-    const editable = canScore(m) && st !== "voting" && st !== "done";
+    const editable = canPick(m) && st !== "voting" && st !== "done";
     const li = (pid, t) => `<li><span>${avHtml(pid, "msg-av")}${esc(nameOf(pid))}${members.find(x => x.id === pid)?.playing_role ? ` <small class="muted">${roleLabel(members.find(x => x.id === pid).playing_role)}</small>` : ""}${(t === "A" ? m.captain_a : m.captain_b) === pid ? ' <span class="chip cap" style="padding:1px 6px">©️ captain</span>' : ""}</span>${editable ? `<button class="text-btn danger" data-team-move="${pid}" data-team-to="">remove</button>` : ""}</li>`;
     const col = t => `<div class="lineup"><h4>${esc(tname(m, t))} <span class="muted" style="font-size:11px">${tm[t].length} players</span></h4><ul>${tm[t].map(p => li(p, t)).join("") || '<li class="muted">No players yet</li>'}</ul></div>`;
     const pool = att.filter(p => !tm.A.includes(p) && !tm.B.includes(p));
@@ -393,7 +395,7 @@
     // scorecard
     const inns = inningsOf(m);
     $("ctab-score").innerHTML = inns.length ? resultStrip(m) + inns.map(i => `<div class="innings-card"><h4><span>${i.innings_no === 1 ? "1st" : "2nd"} innings · ${esc(tname(m, i.batting_team))}</span><span>${i.runs}/${i.wickets} (${oversFmt(i.balls)} ov)${i.status === "live" ? ' <span class="status live">LIVE</span>' : ""}</span></h4>${statsTables(m, i.innings_no)}</div>`).join("") + (m.toss_winner ? `<p class="hint">Toss: ${esc(tname(m, m.toss_winner))} chose to ${m.toss_decision}.</p>` : "") :
-      `<div class="empty">${st === "done" ? "No score was recorded for this match." : "No score yet. " + (canScore(m) && st === "locked" ? "Start the match from Fixtures to begin scoring." : "The scoreboard appears once the match starts.")}</div>`;
+      `<div class="empty">${st === "done" ? "No score was recorded for this match." : "No score yet. " + (isAdmin() && st === "locked" ? "Start the match from Fixtures to begin scoring." : "The admin starts the match; the scoreboard appears here once it's live.")}</div>`;
     // chat
     const list = messages.filter(x => x.match_id === m.id);
     $("centreChat").innerHTML = list.length ? list.map(msgHtml).join("") : '<div class="empty">No comments yet. Suggestions about time, venue or day go here.</div>';
